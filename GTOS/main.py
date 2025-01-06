@@ -67,7 +67,7 @@ def main():
     
     print("plotting")
     print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted and saved in a .png format")
-    print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format")
+    print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format for an isovalue of corresponding to 95% electron density")
 
     for i in range(N):
         plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}")
