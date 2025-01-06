@@ -34,8 +34,8 @@ def plot(Alphas, l, m, n, coefficients, energy, filename):
     None
         This function generates plots and saves isosurface files, but does not return any values.
     """
-    # Adjust the grid based on the provided parameters and a tolerance of 1e-8
-    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-8)
+    # Adjust the grid based on the provided parameters and a tolerance of 1e-4
+    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-4)
     
     # Generate wavefunction (psi) and additional outputs based on the grid
     psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid)
@@ -83,6 +83,12 @@ def plot(Alphas, l, m, n, coefficients, energy, filename):
     fig.savefig(fname, dpi=300, bbox_inches="tight")  # Ensure high-quality saving
     # Display the plots
     plt.show()
+    
+    # Adjust the grid based on the provided parameters and a tolerance of 1e-8
+    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-8)
+    
+    # Generate wavefunction (psi) and additional outputs based on the grid
+    psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid)
     
     # Define the isovalue as a fraction of the maximum wavefunction squared
     isovalue = 0.05 * np.max(psi**2)
