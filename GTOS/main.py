@@ -19,7 +19,7 @@ def main():
     Lebedevorder = 0 # Levedev-Chebychev order used
     Z = 1 # nuclear charge of hydrogen
     
-    print("Choosing Method \n \t 0: Numerical Integration Via Gauss-Lebedev-Chebychev \n \t 1: Analytical Solutions in Python \n \t 2: Analytical Solutions via Pyqint \n")
+    print("Choosing Method \n \t 0: Numerical Integration Via Gauss-Chebyshev-Lebedev \n \t 1: Analytical Solutions in Python \n \t 2: Analytical Solutions via Pyqint \n")
     
     method = int(input("Enter your method of choice (default: 2): ") or 2)
     
@@ -27,7 +27,7 @@ def main():
     if method == 0:
         print("\t The numerical integration method requires a choice of sampling points")
         Radialpoints = int(input("\t Enter your choice of radial sampling points (default: 32): ") or 32)
-        Lebedevorder = int(input("\t Enter your choice of Lebedev-Chebychev order (angular sampling points) (default: 17): ") or 17)
+        Lebedevorder = int(input("\t Enter your choice of Lebedev order (angular sampling points) (default: 17): ") or 17)
     
     print("")
         
@@ -53,9 +53,9 @@ def main():
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time # Record the elapsed time
 
-    print(f"Elapsed of minimization of the energies to find the best alphas: {elapsed_time:.6f} seconds \n")
+    print(f"Elapsed time for minimization of the energies to find the best alphas: {elapsed_time:.6f} seconds \n")
     
-    print(f"Results")
+    print("Results")
 
     print(f"Optimized Alphas: {optimized_alphas}")
 
@@ -66,8 +66,8 @@ def main():
     print(f"Final Energies: {energy} \n")
     
     print("plotting")
-    print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted")
-    print("\t The isosurface files of the hydrogen-like orbitals are also genereated in a .ply format")
+    print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted and saved in a .png format")
+    print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format")
 
     for i in range(N):
         plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}")

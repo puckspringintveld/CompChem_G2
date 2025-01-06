@@ -1,3 +1,4 @@
+# importing general python modules
 import numpy as np
 from scipy.special import factorial
 
@@ -28,45 +29,73 @@ def generate_lmn(final_sum):
                 
     return np.array(l_values), np.array(m_values), np.array(n_values)
 
-def normalization_constant(alpha, l, m, n):
-    """Compute the normalization constant for a GTO."""
-    prefactor = (2 * alpha / np.pi) ** (3 / 4)
-    angular_factor = ((8 * alpha) ** (l + m + n) *
+def normalization_constant(Alphas, l, m, n):
+    """
+    Compute the normalization constant for a Gaussian-Type Orbital (GTO).
+
+    Parameters
+    ----------
+    Alphas : list or numpy.ndarray
+        Exponents of the Gaussian basis functions.
+    Lebedevorder : int
+        Order of the Lebedev quadrature for angular integration.
+    Radialpoints : int
+        Number of radial grid points for the Gauss-Chebychev quadrature.
+    l : list or numpy.ndarray
+        Angular momentum gto numbers in the x-direction for each basis function.
+    m : list or numpy.ndarray
+        Angular momentum gto numbers in the y-direction for each basis function.
+    n : list or numpy.ndarray
+        Angular momentum gto numbers in the z-direction for each basis function.
+
+    Returns
+    -------
+    float
+        The normalization constant for the GTO(s).
+    """
+    # Prefactor for normalization based on the Gaussian exponent
+    prefactor = (2 * Alphas / np.pi) ** (3 / 4)
+
+    # Angular momentum dependent factor
+    angular_factor = ((8 * Alphas) ** (l + m + n) *
                       factorial(l) * factorial(m) * factorial(n) /
                       (factorial(2 * l) * factorial(2 * m) * factorial(2 * n))) ** 0.5
-    
+
+    # Return the combined normalization constant
     return prefactor * angular_factor
+
 
 def GTO(x, y, z, alpha, l, m, n):
     """
-    Gaussian-Type Orbital (GTO) implementation with proper normalization.
+    Gaussian-Type Orbital (GTO).
     Parameters:
         x, y, z : array-like
             Coordinates where the GTO is evaluated.
         alpha : float
             Gaussian exponent.
         l, m, n : int
-            Angular momentum quantum numbers.
+            Angular momentum gto numbers.
     """
-
-    N = normalization_constant(alpha, l, m, n)
+    # normalization constant
+    N = normalization_constant(alpha, l, m, n) 
     
     return N * (x ** l) * (y ** m) * (z ** n) * np.exp(-alpha * (x**2 + y**2 + z**2))
 
 def H_GTO(x, y, z, alpha, l, m, n, Z):
     """
-    Gaussian-Type Orbital (GTO) implementation with proper normalization.
+    Hamiltonian acting on a Gaussian-Type Orbital (GTO).
     Parameters:
         x, y, z : array-like
             Coordinates where the GTO is evaluated.
         alpha : float
             Gaussian exponent.
         l, m, n : int
-            Angular momentum quantum numbers.
+            Angular momentum gto numbers.
     """
-
+    # normalization constant
     N = normalization_constant(alpha, l, m, n)
     
+    # kinetic part of hamiltonian acting on the gaussian type orbital
     Kinetic = - (np.exp(-alpha * (x**2 + y**2 + z**2)) * 
                     N * x**(-2 + l) * y**(-2 + m) * z**(-2 + n) * 
                     (
@@ -83,6 +112,7 @@ def H_GTO(x, y, z, alpha, l, m, n, Z):
                     )
                 ) / 2
     
+    # potential part of hamiltonian acting on the gaussian type orbital
     Potential = - Z * N * (x ** l) * (y ** m) * (z ** n) * \
                   np.exp(-alpha * (x**2 + y**2 + z**2)) / (np.sqrt(x**2 + y**2 + z**2))
 
