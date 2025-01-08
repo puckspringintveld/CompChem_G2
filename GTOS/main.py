@@ -47,6 +47,7 @@ def main():
 
     start_time = time.time()  # Record the start time
     
+    # in principle a minimization is not needed but it does improve the results
     result = minimize(energy_function, x0=X0, bounds=[(1e-8, 1e8)], args=(Lebedevorder, Radialpoints, l, m, n, Z, method))
     optimized_alphas = result.x # extracting the optimized alphas
     

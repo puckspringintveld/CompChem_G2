@@ -79,7 +79,7 @@ def plot(n, l, m):
     # Adjust grid size for visualization and compute the wavefunction
     grid = auto_adjust_grid(n, l, m, 1e-4)
     psi, _, _, z = psi_plot(n, l, m, grid)
-    psi = np.real(psi)  # Use the real part of the wavefunction
+    psi = np.real(psi) # due to numerical error there is still very 1e-16 imaginary components
 
     # Compute the energy of the wavefunction
     energy = -1 / n**2 / 2
@@ -122,17 +122,30 @@ def plot(n, l, m):
     fig.suptitle(f"Energy: {energy:.6f} Ht, n = {n}, l = {l}, m = {m}", fontsize=16, y=0.92)
     fig.savefig(fname, dpi=300, bbox_inches="tight")  # Ensure high-quality saving
     plt.show()
-
-    # Adjust grid size for isosurface generation and recompute the wavefunction
+    
+    # Adjust grid size for visualization and compute the wavefunction
     grid = auto_adjust_grid(n, l, m, 1e-10)
     psi, _, _, z = psi_plot(n, l, m, grid)
-    psi = np.real(psi)
+    psi = np.real(psi) # due to numerical error there is still very 1e-16 imaginary components
+    
+    # Compute the electron density (normalized wavefunction squared)
+    density = psi**2
 
-    # Define the isovalue as a fraction of the maximum wavefunction squared
-    isovalue = 0.05 * np.max(psi**2)
+    # Flatten the density array for processing
+    flat_density = density.flatten()
 
+    # Sort density values in descending order
+    sorted_density = np.sort(flat_density)[::-1]
+
+    # Compute the cumulative sum
+    cumulative_density = np.cumsum(sorted_density)
+
+    # Find the isovalue corresponding to 95% electron density
+    isovalue_index = np.searchsorted(cumulative_density, 0.95)
+    isovalue = sorted_density[isovalue_index]
+    
     # Create a unit cell based on the grid size
-    unitcell = np.diag(np.ones(3) * grid * 2)
+    unitcell = np.diag(np.ones(3) * 1)
 
     # Ensure the folder for isosurface files exists
     os.makedirs("Iso_Surfaces", exist_ok=True)
@@ -176,7 +189,7 @@ def psi_plot(n, l, m, grid):
     numpy.ndarray
         1D array of z-coordinates for the grid.
     """
-    # Define Cartesian grid with evenly spaced points
+    # Define Cartesian grid
     x = np.linspace(-grid, grid, 101)
     y = np.linspace(-grid, grid, 101)
     z = np.linspace(-grid, grid, 101)
@@ -186,19 +199,32 @@ def psi_plot(n, l, m, grid):
     R, Theta, Phi = cartesian_to_spherical(xx, yy, zz)
 
     # Define symbolic variables for the hydrogen-like wavefunction
-    r = Symbol("r", positive=True)  # Radial distance
-    phi = Symbol("phi", real=True)  # Azimuthal angle
-    theta = Symbol("theta", real=True)  # Polar angle
-    Z = Symbol("Z", positive=True, integer=True, nonzero=True)  # Nuclear charge
+    r = Symbol("r", positive=True)
+    phi = Symbol("phi", real=True)
+    theta = Symbol("theta", real=True)
+    Z = Symbol("Z", positive=True, integer=True, nonzero=True)
 
     # Obtain the symbolic representation of the wavefunction
     psi_symbolic = Psi_nlm(n, l, m, r, phi, theta, Z)
+    psi_symbolic_opposite_m = Psi_nlm(n, l, -m, r, phi, theta, Z)
 
     # Convert the symbolic wavefunction to a NumPy-compatible function
     psi_func = lambdify((r, theta, phi, Z), psi_symbolic, modules="numpy")
+    psi_func_opposite_m = lambdify((r, theta, phi, Z), psi_symbolic_opposite_m, modules="numpy")
 
-    # Evaluate the wavefunction numerically on the spherical grid
-    return psi_func(R, Theta, Phi, 1), x, y, z
+    # Apply tesseral harmonic transformation
+    if m < 0:
+        psi_m = psi_func(R, Theta, Phi, 1)
+        psi_neg_m = psi_func_opposite_m(R, Theta, Phi, 1)
+        psi = 1j * (psi_m - (-1)**m * psi_neg_m) / np.sqrt(2)
+    elif m > 0:
+        psi_m = psi_func(R, Theta, Phi, 1)
+        psi_neg_m = psi_func_opposite_m(R, Theta, Phi, 1)
+        psi = (psi_neg_m + (-1)**m * psi_m) / np.sqrt(2)
+    else:
+        psi = psi_func(R, Theta, Phi, 1)
+
+    return psi, x, y, z
 
 def auto_adjust_grid(n, l, m, threshold_factor):
     """

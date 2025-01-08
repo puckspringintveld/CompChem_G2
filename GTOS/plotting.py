@@ -39,7 +39,7 @@ def plot(Alphas, l, m, n, coefficients, energy, filename):
     
     # Generate wavefunction (psi) and additional outputs based on the grid
     psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid)
-
+    
     # Compute indices for evenly spaced slices along the z-axis
     z_indices = np.linspace(0, len(z) - 1, 9).astype(int)
     
@@ -84,16 +84,32 @@ def plot(Alphas, l, m, n, coefficients, energy, filename):
     # Display the plots
     plt.show()
     
-    # Adjust the grid based on the provided parameters and a tolerance of 1e-8
-    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-8)
+    # Adjust the grid based on the provided parameters and a tolerance of 1e-4
+    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-10)
     
     # Generate wavefunction (psi) and additional outputs based on the grid
     psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid)
+    # numerical error causes some 1e-16 imaginary part to remain even after the tesseral tranformation
+    psi = np.real(psi)
     
-    # Define the isovalue as a fraction of the maximum wavefunction squared
-    isovalue = 0.05 * np.max(psi**2)
+    # Compute the electron density (normalized wavefunction squared)
+    density = np.real(psi)**2
+ 
+    # Flatten the density array for processing
+    flat_density = density.flatten()
+ 
+    # Sort density values in descending order
+    sorted_density = np.sort(flat_density)[::-1]
+ 
+    # Compute the cumulative sum
+    cumulative_density = np.cumsum(sorted_density)
+    cumulative_density/= cumulative_density[-1]
+ 
+    # Find the isovalue corresponding to 95% electron density
+    isovalue_index = np.searchsorted(cumulative_density, 0.95)
+    isovalue = sorted_density[isovalue_index]
     # Create a unit cell based on the grid size (arbitrarily)
-    unitcell = np.diag(np.ones(3) * grid * 2)
+    unitcell = np.diag(np.ones(3) * 1)
     
     # Ensure the folder for isosurface files exists
     os.makedirs("Iso_Surfaces", exist_ok=True)
