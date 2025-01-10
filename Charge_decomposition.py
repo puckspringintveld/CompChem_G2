@@ -24,6 +24,11 @@ p_C=result['C']
 M_O=np.sum(P[:5,:]*S[:,:5].T)
 M_C=np.sum(P[5:,:]*S[:,5:].T)
 M_mu=M_O+M_C
+charge_o=8-M_O
+charge_c=6-M_C
+
+mu_O=charge_o*2.26*1/2.541
+mu_C=charge_c*2.26*1/2.542
 
 # generate grid of points and calculate the electron density for these points
 sz = 4      # size of the domain
@@ -51,38 +56,20 @@ D=np.zeros((len(x),len(x)-1))
 for i in range(len(x)):
     pos=np.where(density[:,i]==np.min(density[:,i]))
     mins.append(np.min(density[:,i]))
-    y.append(x[pos]) 
+    y.append(x[pos][0]) 
 
-for i in range(len(x)):
-    derivative=density[:-1,i]-density[1:,i]/(x[1]-x[0])
-    D[i,:]=derivative
-    # derivative[density[:-1,i]>0]=10
-    # p=np.where(np.round(derivative,2)==0)
-    
-    # # if np.shape(p[0])[0]==1:
-    # #     while (derivative[p[0]]-derivative[p[0]-1])>0:
-    # #         derivative[p]+=10
-    # #         p=np.where(np.round(derivative,1)==0)
-    # # else:
-    # #     p_new=0
-    # #     for j in range(np.shape(p[0])[0]):
-    # #         if (derivative[p[0][j]]-derivative[p[0][j]-1])<0:
-    # #             p_new=p[0][j]
-    # #         else:
-    # #             derivative[p[0][j]]+=10
-    # #             p_new=np.where(np.round(derivative,1)==0)
-    # #     p=p_new
-                
-    # #p=np.where(derivative**2==np.min(derivative**2))
-    # y_flux.append(x[p])
+y_min=min(y)
+min_place=np.where(np.array(y)==y_min)
+y_new=np.array(y)
+y_new[:min_place[0][0]]=y_min
+y_new[min_place[0][-1]:]=y_min
     
 
 # build contour plot
 fig, ax = plt.subplots(1,1, dpi=144, figsize=(4,4))
-im = ax.contourf(x, x, density, levels=np.linspace(-3,3,13, endpoint=True))
+im = ax.contourf(x, x, density, levels=np.linspace(-3,3,13, endpoint=True), cmap='PiYG')
 ax.contour(x, x, density, colors='black', levels=np.linspace(-3,3,13, endpoint=True))
-ax.plot(x,y,c='r')
-ax.plot(x,y_flux,c='y')
+ax.plot(x,y_new,c='k', linewidth=2.5)
 ax.set_aspect('equal', 'box')
 ax.set_xlabel('x-coordinate [a.u.]')
 ax.set_ylabel('z-coordinate [a.u.]')
