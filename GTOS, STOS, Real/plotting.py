@@ -8,7 +8,7 @@ import os
 # importing function from self created files
 from gaussian_type_orbitals import normalization_constant
 from slater_type_orbitals import STO
-from coordinate_transformation import cartesian_to_spherical
+from coordinates import cartesian_to_spherical
 
 def plot(Alphas, l, m, n, coefficients, energy, filename, method):
     """
@@ -40,7 +40,7 @@ def plot(Alphas, l, m, n, coefficients, energy, filename, method):
     grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-4, method)
     
     # Generate wavefunction (psi) and additional outputs based on the grid
-    psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid, method)
+    psi, x, y, z = psi_plot(Alphas, l, m, n, coefficients, grid, method)
     
     # Compute indices for evenly spaced slices along the z-axis
     z_indices = np.linspace(0, len(z) - 1, 9).astype(int)
@@ -59,33 +59,35 @@ def plot(Alphas, l, m, n, coefficients, energy, filename, method):
         fnamepos = os.path.join("Iso_Surfaces_GTO", filename + '_pos.ply')  # Positive isosurface filename
         fnameneg = os.path.join("Iso_Surfaces_GTO", filename + '_neg.ply')  # Negative isosurface filename
 
-    # Create a new figure for the plot
+    # Create a new figure for the contour plots
     fig = plt.figure(figsize=(13, 12))
     # Define a 3x3 grid layout for subplots with specified spacing
     gs = gridspec.GridSpec(3, 3, wspace=0.3, hspace=0.3, right=0.85)
     # Set plot extent and limits based on the grid
     extent = [-grid, grid, -grid, grid]
     limit = np.max(np.abs(psi))
-    
+
     # Loop over the z indices to create individual subplots
     for idx, z_index in enumerate(z_indices):
         # Calculate row and column for the subplot
         row, col = divmod(idx, 3)
         ax = fig.add_subplot(gs[row, col])  # Add a subplot
-        # Display the XY plane slice of the wavefunction at the given z-index
-        im = ax.imshow(
-            psi[:, :, z_index],
-            origin='lower',
-            extent=extent,
-            cmap='PiYG',  # Use PiYG colormap
-            vmin=-limit,  # Set color scale minimum
-            vmax=limit    # Set color scale maximum
+
+        # Create a contour plot of the wavefunction at the given z-index
+        levels = np.linspace(-limit, limit, 51, endpoint=True)
+        im = ax.contourf(
+            x, y, psi[:, :, z_index],
+            levels=levels,
+            cmap='seismic',  # Use PiYG colormap
+            extent=extent
         )
+        
         # Add a title and axis labels to the subplot
         ax.set_title(f"XY Plane at Z = {z[z_index]:.2f} (a.u.)")
         ax.set_xlabel("x (a.u.)")
         ax.set_ylabel("y (a.u.)")
-    
+        ax.set_aspect('equal', 'box')
+
     # Add a single colorbar to the figure
     cbar_ax = fig.add_axes([0.87, 0.15, 0.03, 0.7])  # Define colorbar position
     fig.colorbar(im, cax=cbar_ax, label="Wavefunction Value")

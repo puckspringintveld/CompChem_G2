@@ -7,7 +7,7 @@ from matplotlib import gridspec
 from pytessel import PyTessel
 
 # importing self made functions
-from coordinate_transformation import cartesian_to_spherical
+from coordinates import cartesian_to_spherical
 
 # setting the current directory to where the file is located
 import os
@@ -19,11 +19,13 @@ def main():
     max_n = int(input("Enter up untill which principle quantum number to generate (default: 4): ") or 4)
     print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted and saved in a .png format")
     print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format for an isovalue corresponding to 95% electron density")
-    
+
+
     for n in range(1, max_n + 1):  # Principal quantum number (n >= 1)
         for l in range(0, n):  # Azimuthal quantum number (0 <= l < n)
             for m in range(-l, l + 1):  # Magnetic quantum number (-l <= m <= l)
                 plot(n, l, m)
+                print(f"\t plotting orbital n: {n}, l: {l}, m: {m}")
 
 def plot(n, l, m):
     """
@@ -46,8 +48,7 @@ def plot(n, l, m):
     """
     # Adjust grid size for visualization and compute the wavefunction
     grid = auto_adjust_grid(n, l, m, 1e-4)
-    psi, _, _, z = psi_plot(n, l, m, grid)
-    psi = np.real(psi) # due to numerical error there is still very 1e-16 imaginary components
+    psi, x, y, z = psi_plot(n, l, m, grid)
 
     # Compute the energy of the wavefunction
     energy = -1 / n**2 / 2
@@ -60,41 +61,46 @@ def plot(n, l, m):
     filename = f"{n}_{l}_{m}"
     fname = os.path.join("Contour_Plots_Real", filename + ".png")  # Contour plot filename
 
-    # Set up the figure and plot parameters
+    # Create a new figure for the contour plots
     fig = plt.figure(figsize=(13, 12))
+    # Define a 3x3 grid layout for subplots with specified spacing
     gs = gridspec.GridSpec(3, 3, wspace=0.3, hspace=0.3, right=0.85)
+    # Set plot extent and limits based on the grid
     extent = [-grid, grid, -grid, grid]
     limit = np.max(np.abs(psi))
 
-    # Generate contour plots for XY planes at selected Z slices
+    # Loop over the z indices to create individual subplots
     for idx, z_index in enumerate(z_indices):
+        # Calculate row and column for the subplot
         row, col = divmod(idx, 3)
-        ax = fig.add_subplot(gs[row, col])
-        im = ax.imshow(
-            psi[:, :, z_index].real,  # Use the real part of the wavefunction
-            origin='lower',
-            extent=extent,
-            cmap='PiYG',
-            vmin=-limit,
-            vmax=limit
+        ax = fig.add_subplot(gs[row, col])  # Add a subplot
+
+        # Create a contour plot of the wavefunction at the given z-index
+        levels = np.linspace(-limit, limit, 51, endpoint=True)
+        im = ax.contourf(
+            x, y, psi[:, :, z_index],
+            levels=levels,
+            cmap='seismic',  # Use PiYG colormap
+            extent=extent
         )
+        
+        # Add a title and axis labels to the subplot
         ax.set_title(f"XY Plane at Z = {z[z_index]:.2f} (a.u.)")
         ax.set_xlabel("x (a.u.)")
         ax.set_ylabel("y (a.u.)")
+        ax.set_aspect('equal', 'box')
 
-    # Add a colorbar to the figure
-    cbar_ax = fig.add_axes([0.87, 0.15, 0.03, 0.7])
+    # Add a single colorbar to the figure
+    cbar_ax = fig.add_axes([0.87, 0.15, 0.03, 0.7])  # Define colorbar position
     fig.colorbar(im, cax=cbar_ax, label="Wavefunction Value")
-
-    # Add a title and save the figure
-    fig.suptitle(f"Energy: {energy:.6f} Ht, n = {n}, l = {l}, m = {m}", fontsize=16, y=0.92)
+    # Add a figure-wide title showing the computed energy
+    fig.suptitle(f"Energy: {energy:.8f} Ht, n: {n}, l:{l}, m{m}", fontsize=16, y=0.92)
     fig.savefig(fname, dpi=300, bbox_inches="tight")  # Ensure high-quality saving
     plt.close()
     
     # Adjust grid size for visualization and compute the wavefunction
     grid = auto_adjust_grid(n, l, m, 1e-10)
     psi, _, _, z = psi_plot(n, l, m, grid)
-    psi = np.real(psi) # due to numerical error there is still very 1e-16 imaginary components
     
     # Compute the electron density (normalized wavefunction squared)
     density = psi**2
@@ -167,7 +173,10 @@ def psi_plot(n, l, m, grid):
     # Convert Cartesian coordinates to spherical coordinates
     R, Theta, Phi = cartesian_to_spherical(xx, yy, zz)
 
-    # Define symbolic variables for the hydrogen-like wavefunction
+    return wavefunction(n, l, m, R, Theta, Phi), x, y, z
+
+def wavefunction(n, l, m, R, Theta, Phi):
+     # Define symbolic variables for the hydrogen-like wavefunction
     r = Symbol("r", positive=True)
     phi = Symbol("phi", real=True)
     theta = Symbol("theta", real=True)
@@ -193,7 +202,7 @@ def psi_plot(n, l, m, grid):
     else:
         psi = psi_func(R, Theta, Phi, 1)
 
-    return psi, x, y, z
+    return np.real(psi)
 
 def auto_adjust_grid(n, l, m, threshold_factor):
     """

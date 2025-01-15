@@ -1,10 +1,9 @@
 # importing general python modules
 import numpy as np
-from pylebedev import PyLebedev
 from pyqint import PyQInt, cgf
 
 # importing self created functions
-from coordinate_transformation import cartesian_to_spherical
+from coordinates import cartesian_to_spherical, Gauss_Lebedev_Chebychev
 from gaussian_type_orbitals import GTO, H_GTO, normalization_constant
 from slater_type_orbitals import STO, H_STO
 from analytical_integrals import kinetic_integral, nuclear_integral, overlap_integral
@@ -63,32 +62,11 @@ def Matrixes_Numerically_STO(n, l, m, Zetas, Radialpoints, Lebedevorder):
             - H (numpy.ndarray): The Hamiltonian matrix.
             - S (numpy.ndarray): The overlap matrix.
     """
-    rm = 0.35  # Scaling factor for radial coordinates
-
-    # Build the Gauss-Chebyshev radial grid
-    z = np.arange(1, Radialpoints + 1)  # Indices for radial grid points
-    x = np.cos(np.pi / (Radialpoints + 1) * z)  # Cosine mapping for Chebyshev points
-    r = rm * (1 + x) / (1 - x)  # Radial transformation to stretch grid points
-    wr = (np.pi / (Radialpoints + 1) * np.sin(np.pi / (Radialpoints + 1) * z)**2
-          * 2.0 * rm / (np.sqrt(1 - x**2) * (1 - x)**2))  # Radial weights
-
-    # Get Lebedev quadrature points and weights
-    leblib = PyLebedev()  # Initialize the Lebedev quadrature library
-    p, wl = leblib.get_points_and_weights(Lebedevorder)  # Obtain angular points and weights
-
-    # Construct the full 3D grid by combining radial and angular grids
-    gridpts = np.outer(r, p).reshape((-1, 3))  # Combine radial and angular grid points
-
-    # Separate x, y, z coordinates from the grid
-    x = gridpts[:, 0]
-    y = gridpts[:, 1]
-    z = gridpts[:, 2]
+    # generate gridpoints
+    x, y, z, gridw = Gauss_Lebedev_Chebychev(Radialpoints, Lebedevorder)
 
     # Convert Cartesian coordinates to spherical coordinates
     R, Theta, Phi = cartesian_to_spherical(x, y, z)
-
-    # Compute combined weights for radial and angular parts
-    gridw = np.outer(wr * r**2, wl).flatten()  # Combine radial and angular weights
 
     num_points = len(R)  # Total number of grid points
     Psis = np.zeros((num_points, len(Zetas)))  # Array to store wavefunctions
@@ -135,27 +113,8 @@ def Matrixes_Numerically(Alphas, Lebedevorder, Radialpoints, l, m, n, Z):
     S : numpy.ndarray
         Overlap matrix representing the basis function overlap integrals.
     """
-    rm = 0.35  # Scaling factor for radial coordinates
-
-    # Build the Gauss-Chebychev radial grid
-    z = np.arange(1, Radialpoints + 1)
-    x = np.cos(np.pi / (Radialpoints + 1) * z)  # Cosine mapping for Chebyshev points
-    r = rm * (1 + x) / (1 - x)  # Radial transformation
-    wr = (np.pi / (Radialpoints + 1) * np.sin(np.pi / (Radialpoints + 1) * z)**2
-          * 2.0 * rm / (np.sqrt(1 - x**2) * (1 - x)**2))  # Radial weights
-
-    # Get Lebedev quadrature points and weights
-    leblib = PyLebedev()
-    p, wl = leblib.get_points_and_weights(Lebedevorder)
-
-    # Construct the full 3D grid by combining radial and angular grids
-    gridpts = np.outer(r, p).reshape((-1, 3))  # Combine radial and angular points
-    gridw = np.outer(wr * r**2, wl).flatten()  # Combine radial and angular weights
-
-    # Separate x, y, z coordinates from the grid
-    x = gridpts[:, 0]
-    y = gridpts[:, 1]
-    z = gridpts[:, 2]
+    # generate gridpoints
+    x, y, z, gridw = Gauss_Lebedev_Chebychev(Radialpoints, Lebedevorder)
 
     # Prevent division by zero in the GTO computation
     epsilon = 1e-10

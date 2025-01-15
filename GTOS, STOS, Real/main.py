@@ -80,10 +80,11 @@ def main():
         H, S = Matrixes_Numerically_STO(n, l, m, optimized_alphas, Radialpoints, Lebedevorder)
 
     energy, coefficients = Linear_Variation(H, S)
-    print(np.shape(energy))
 
-    # saving coefficient matrix
-    coefficients_df = pd.DataFrame(coefficients)
+    # Concatenate energy on top of coefficients along axis=0
+    coefficient_matrix = np.concatenate((optimized_alphas.reshape(1, -1) ,energy.reshape(1, -1), coefficients), axis=0)
+
+    coefficients_df = pd.DataFrame(coefficient_matrix)
     if method == 3:
         coefficients_df.to_excel("coefficient_matrix_STO.xlsx", index=False)
     else:
