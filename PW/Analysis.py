@@ -139,8 +139,8 @@ def plot(psi,a_0,res=16):
     fig.colorbar(im, cax=cbar_ax, label="Wavefunction Value")
 
     # Add a title and save the figure
-    fig.suptitle(f"Energy: -0.03681 Ht", fontsize=16, y=0.92)
-    fig.savefig('contour plots/3d5_pw', dpi=300, bbox_inches="tight")  # Ensure high-quality saving
+    #fig.suptitle(f"Energy: -0.03681 Ht", fontsize=16, y=0.92)
+    #fig.savefig('contour plots/3d5_pw', dpi=300, bbox_inches="tight")  # Ensure high-quality saving
     plt.show()
     plt.close()
     
