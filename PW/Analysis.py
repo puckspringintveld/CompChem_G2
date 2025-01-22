@@ -5,11 +5,7 @@ Created on Wed Jan 15 12:57:17 2025
 @author: 20211382
 """
 
-from sklearn import gaussian_process
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel, ConstantKernel, Matern
 import numpy as np
-from xgboost import XGBRegressor
-from scipy.interpolate import RegularGridInterpolator
 from pytessel import PyTessel
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
