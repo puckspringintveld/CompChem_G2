@@ -16,24 +16,24 @@ from linear_variation import Linear_Variation, energy_function, Matrixes_Analyti
 from plotting import plot
 
 def main():
-    # defining constants
+    # # defining constants
     Radialpoints = 0 # number of radial sampeling points
     Lebedevorder = 0 # Levedev-Chebychev order used
     Z = 1 # nuclear charge of hydrogen
 
     print("")
     print("Choosing Method \n \t 0: GTO Numerical Integration Via Gauss-Chebyshev-Lebedev \n \t 1: GTO Analytical Solutions in Python \n \t 2: GTO Analytical Solutions via Pyqint \n \t 3: STO Numerical Integration Via Gauss-Chebyshev-Lebedev \n")
-    
+
     method = int(input("Enter your method of choice (default: 2): ") or 2)
-    
+
     print(f"\t You chose method {method}")
     if method == 0 or method == 3:
         print("\t The numerical integration method requires a choice of sampling points")
         Radialpoints = int(input("\t Enter your choice of radial sampling points (default: 32): ") or 32)
         Lebedevorder = int(input("\t Enter your choice of Lebedev order (angular sampling points) (default: 17): ") or 17)
-    
+
     print("")
-    
+
     if method == 3:
         order_slater_orbitals = int(input("Enter the desired higest principle quantum number of the Slater Type Orbitals to use as a Basis Set (default: 4): ") or 4)
         n, l, m = generate_quantum_numbers(order_slater_orbitals)
@@ -47,7 +47,7 @@ def main():
         l, m, n = generate_lmn(order_gaussian_orbitals)
         print(f"\t You chose the order of GTO's to be: {order_gaussian_orbitals}")    
         print(f"\t A max order of {order_gaussian_orbitals} GTO's corresponds to a Basis Set size of: {len(l)} \n")
-    
+
         # generating a "good" initial guesses for the alphas for optimizing
         N = len(l)
         Beta = 1.2
@@ -55,16 +55,16 @@ def main():
         X0 = np.array([Alpha0 * Beta ** -(i - 1)/i for i in range(1, N + 1)])    
 
     start_time = time.time()  # Record the start time
-    
+
     # in principle a minimization is not needed but it does improve the results
     result = minimize(energy_function, x0=X0, bounds=[(1e-8, 1e8)], args=(Lebedevorder, Radialpoints, l, m, n, Z, method))
     optimized_alphas = result.x # extracting the optimized alphas
-    
+
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time # Record the elapsed time
 
     print(f"Elapsed time for minimization of the energies to find the best alphas: {elapsed_time:.6f} seconds \n")
-    
+
     print("Results")
 
     print(f"Optimized Alphas: {optimized_alphas}")
@@ -98,6 +98,6 @@ def main():
 
     for i in range(1):
         print(f"\t Plotting orbital {i + 1} out of {N}")
-        plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}", method, 41)
+        plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}", method, 301)
 if __name__ == "__main__":
     main()
