@@ -6,11 +6,11 @@ from pytessel import PyTessel
 import os 
 
 # importing function from self created files
-from gaussian_type_orbitals import normalization_constant
+from gaussian_type_orbitals import GTO
 from slater_type_orbitals import STO
 from coordinates import cartesian_to_spherical
 
-def plot(Alphas, l, m, n, coefficients, energy, filename, method):
+def plot(Alphas, l, m, n, coefficients, energy, filename, method, gridsize):
     """
     Visualize wavefunction slices in the XY plane and generate isosurface files.
 
@@ -40,7 +40,7 @@ def plot(Alphas, l, m, n, coefficients, energy, filename, method):
     grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-4, method)
     
     # Generate wavefunction (psi) and additional outputs based on the grid
-    psi, x, y, z = psi_plot(Alphas, l, m, n, coefficients, grid, method)
+    psi, x, y, z = psi_plot(Alphas, l, m, n, coefficients, grid, method, 101)
     
     # Compute indices for evenly spaced slices along the z-axis
     z_indices = np.linspace(0, len(z) - 1, 9).astype(int)
@@ -97,31 +97,31 @@ def plot(Alphas, l, m, n, coefficients, energy, filename, method):
     plt.close()
 
     # Adjust the grid based on the provided parameters and a tolerance of 1e-4
-    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-10, method)
-    
+    grid = auto_adjust_grid(Alphas, l, m, n, coefficients, 1e-8, method)
+
     # Generate wavefunction (psi) and additional outputs based on the grid
-    psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid, method)
-    # numerical error causes some 1e-16 imaginary part to remain even after the tesseral tranformation
-    psi = np.real(psi)
+    psi, _, _, z = psi_plot(Alphas, l, m, n, coefficients, grid, method, gridsize)
+    dz = (z[1] - z[0])
     
     # Compute the electron density (normalized wavefunction squared)
-    density = np.real(psi)**2
- 
+    density = psi**2 * dz**3
+
     # Flatten the density array for processing
     flat_density = density.flatten()
- 
+
     # Sort density values in descending order
     sorted_density = np.sort(flat_density)[::-1]
- 
+
     # Compute the cumulative sum
     cumulative_density = np.cumsum(sorted_density)
-    cumulative_density/= cumulative_density[-1]
- 
-    # Find the isovalue corresponding to 95% electron density
-    isovalue_index = np.searchsorted(cumulative_density, 0.95)
+    print(f"\t Density: {cumulative_density[-1]}")
+
+    # Find the isovalue corresponding to 90% electron density
+    isovalue_index = np.searchsorted(cumulative_density, 0.90)
     isovalue = sorted_density[isovalue_index]
-    # Create a unit cell based on the grid size (arbitrarily)
-    unitcell = np.diag(np.ones(3) * 1)
+    
+    # Create a unit cell based on the grid size
+    unitcell = np.diag(np.ones(3) * grid/10)
     
     # Initialize PyTessel for isosurface generation
     pytessel = PyTessel()
@@ -133,7 +133,7 @@ def plot(Alphas, l, m, n, coefficients, energy, filename, method):
     vertices, normals, indices = pytessel.marching_cubes(psi.flatten(), psi.shape, unitcell.flatten(), -isovalue)
     pytessel.write_ply(fnameneg, vertices, normals, indices)
 
-def psi_plot(Alphas, l, m, n, coefficients, grid, method):
+def psi_plot(Alphas, l, m, n, coefficients, grid, method, gridsize):
     """
     Calculate the wavefunction values on a 3D grid for visualization.
 
@@ -164,40 +164,23 @@ def psi_plot(Alphas, l, m, n, coefficients, grid, method):
         1D array of z-coordinates for the grid.
     """
     # Define a linear grid of points in the x, y, and z directions
-    x = np.linspace(-grid, grid, 101)
-    y = np.linspace(-grid, grid, 101)
-    z = np.linspace(-grid, grid, 101)
+    x = np.linspace(-grid, grid, gridsize)
+    y = np.linspace(-grid, grid, gridsize)
+    z = np.linspace(-grid, grid, gridsize)
 
     # Create 3D mesh grids for the x, y, and z coordinates
     xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')  # Proper axis alignment
 
+    psi_plot = np.zeros((gridsize, gridsize, gridsize))
+
     # Compute the wavefunction values on the 3D grid
     if method == 3:
         R, Theta, Phi = cartesian_to_spherical(xx, yy, zz)
-        psi_plot = np.zeros((101, 101, 101))
         for i in range(0, len(coefficients)):
             psi_plot += coefficients[i] * STO(n[i], l[i], m[i], Alphas[i], R, Theta, Phi)
     else:
-        # Ensure proper reshaping for broadcasting Gaussian parameters
-        Alphas = np.array(Alphas)[:, None, None, None]  # Shape (N, 1, 1, 1)
-        l = np.array(l)[:, None, None, None]            # Shape (N, 1, 1, 1)
-        m = np.array(m)[:, None, None, None]            # Shape (N, 1, 1, 1)
-        n = np.array(n)[:, None, None, None]            # Shape (N, 1, 1, 1)
-
-        # Add an extra dimension for grid arrays to match Gaussian parameters
-        xx = xx[None, :, :, :]  # Shape (1, 101, 101, 101)
-        yy = yy[None, :, :, :]  # Shape (1, 101, 101, 101)
-        zz = zz[None, :, :, :]  # Shape (1, 101, 101, 101)
-
-        coefficients = np.array(coefficients)[:, None, None, None]  # Shape (N, 1, 1, 1)
-
-        psi_plot = np.sum(
-            coefficients
-            * normalization_constant(Alphas, l, m, n)  # Compute normalization constant
-            * (xx ** l) * (yy ** m) * (zz ** n)        # Apply angular momentum terms
-            * np.exp(-Alphas * (xx**2 + yy**2 + zz**2)),  # Apply Gaussian exponentials
-            axis=0  # Sum contributions from all basis functions
-        )
+        for i in range(0, len(coefficients)):
+            psi_plot += coefficients[i] * GTO(xx, yy, zz, Alphas[i], l[i], m[i], n[i])
     
     # Return the computed wavefunction and the grid coordinates
     return psi_plot, x, y, z
@@ -228,7 +211,7 @@ def auto_adjust_grid(Alphas, l, m, n, coefficients, threshold_factor, method):
         The maximum absolute bound for the spatial grid based on significant wavefunction values.
     """
     # Generate an initial spatial grid with an arbitrary size of 100
-    psi, x, y, z = psi_plot(Alphas, l, m, n, coefficients, 100, method)
+    psi, x, y, z = psi_plot(Alphas, l, m, n, coefficients, 200, method, 100)
     
     # Compute the threshold for significant wavefunction values
     threshold = threshold_factor * np.max(psi**2)
@@ -248,5 +231,3 @@ def auto_adjust_grid(Alphas, l, m, n, coefficients, threshold_factor, method):
 
     # Return the maximum absolute bound across all axes
     return max(abs(np.array([x_min, x_max, y_min, y_max, z_min, z_max])))
-
-

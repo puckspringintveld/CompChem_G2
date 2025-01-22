@@ -20,14 +20,13 @@ def main():
     print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted and saved in a .png format")
     print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format for an isovalue corresponding to 95% electron density")
 
-
     for n in range(1, max_n + 1):  # Principal quantum number (n >= 1)
         for l in range(0, n):  # Azimuthal quantum number (0 <= l < n)
             for m in range(-l, l + 1):  # Magnetic quantum number (-l <= m <= l)
-                plot(n, l, m)
                 print(f"\t plotting orbital n: {n}, l: {l}, m: {m}")
+                plot(n, l, m, 301)
 
-def plot(n, l, m):
+def plot(n, l, m, gridsize):
     """
     Visualize the wavefunction for given principal quantum numbers and generate contour plots
     and isosurface files.
@@ -48,7 +47,7 @@ def plot(n, l, m):
     """
     # Adjust grid size for visualization and compute the wavefunction
     grid = auto_adjust_grid(n, l, m, 1e-4)
-    psi, x, y, z = psi_plot(n, l, m, grid)
+    psi, x, y, z = psi_plot(n, l, m, grid, gridsize)
 
     # Compute the energy of the wavefunction
     energy = -1 / n**2 / 2
@@ -99,12 +98,14 @@ def plot(n, l, m):
     plt.close()
     
     # Adjust grid size for visualization and compute the wavefunction
-    grid = auto_adjust_grid(n, l, m, 1e-10)
-    psi, _, _, z = psi_plot(n, l, m, grid)
+    grid = auto_adjust_grid(n, l, m, 1e-16)
+
+    psi, _, _, z = psi_plot(n, l, m, grid, gridsize)
+    dz = (z[1] - z[0])
     
     # Compute the electron density (normalized wavefunction squared)
-    density = psi**2
-
+    density = psi**2 * dz**3
+    print(f"\t Density: {np.sum(density)}")
     # Flatten the density array for processing
     flat_density = density.flatten()
 
@@ -113,14 +114,13 @@ def plot(n, l, m):
 
     # Compute the cumulative sum
     cumulative_density = np.cumsum(sorted_density)
-    cumulative_density /= cumulative_density[-1]
 
-    # Find the isovalue corresponding to 95% electron density
-    isovalue_index = np.searchsorted(cumulative_density, 0.95)
+    # Find the isovalue corresponding to 90% electron density
+    isovalue_index = np.searchsorted(cumulative_density, 0.90)
     isovalue = sorted_density[isovalue_index]
     
     # Create a unit cell based on the grid size
-    unitcell = np.diag(np.ones(3) * 1)
+    unitcell = np.diag(np.ones(3) * grid/10)
 
     # Ensure the folder for isosurface files exists
     os.makedirs("Iso_Surfaces_Real", exist_ok=True)
@@ -138,7 +138,7 @@ def plot(n, l, m):
     fname = os.path.join("Iso_Surfaces_Real", filename + '_neg.ply')  # Negative isosurface filename
     pytessel.write_ply(fname, vertices, normals, indices)
 
-def psi_plot(n, l, m, grid):
+def psi_plot(n, l, m, grid, gridsize):
     """
     Compute and visualize the hydrogen-like wavefunction on a 3D Cartesian grid.
 
@@ -165,9 +165,9 @@ def psi_plot(n, l, m, grid):
         1D array of z-coordinates for the grid.
     """
     # Define Cartesian grid
-    x = np.linspace(-grid, grid, 101)
-    y = np.linspace(-grid, grid, 101)
-    z = np.linspace(-grid, grid, 101)
+    x = np.linspace(-grid, grid, gridsize)
+    y = np.linspace(-grid, grid, gridsize)
+    z = np.linspace(-grid, grid, gridsize)
     xx, yy, zz = np.meshgrid(x, y, z)
 
     # Convert Cartesian coordinates to spherical coordinates
@@ -225,7 +225,7 @@ def auto_adjust_grid(n, l, m, threshold_factor):
         The maximum absolute bound for the spatial grid, based on the significant wavefunction values.
     """
     # Generate an initial spatial grid with an arbitrary size of 100
-    psi, x, y, z = psi_plot(n, l, m, 100)
+    psi, x, y, z = psi_plot(n, l, m, 200, 201)
 
     # Compute the threshold for significant wavefunction values
     threshold = threshold_factor * np.max(psi**2)

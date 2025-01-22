@@ -94,11 +94,10 @@ def main():
     
     print("plotting")
     print("\t The contour plots of the optimized hydrogen-like orbitals will be plotted and saved in a .png format")
-    print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format for an isovalue corresponding to 95% electron density")
+    print("\t The isosurface files of the hydrogen-like orbitals are also saved in a .ply format for an isovalue corresponding to 90% electron density")
 
-    for i in range(N):
+    for i in range(1):
         print(f"\t Plotting orbital {i + 1} out of {N}")
-        plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}", method)
-    
+        plot(optimized_alphas, l, m, n, coefficients[:, i], energy[i], f"orbital_{i}", method, 41)
 if __name__ == "__main__":
     main()
