@@ -20,7 +20,7 @@ GTOs, STOs, Real
 
 PW
 pw_hydrorb - constructing the hamiltonian, solving eiegen value problem, adding Ewald sum to energies and saving the wavefunctions.
-Analysis.py - analysis of the PW wave function results using the save numpy array files which are stored in the PW_psis folder (this is done for several unit cell lenths). Generates analytical solutions using analytical.py, calculates RMSE, plots contour plots (saved in contou plots folder), and makes isosurface files (.ply) which can be processed in Blender (saved in Isosurfaces folder.
+Analysis.py - analysis of the PW wave function results using the save numpy array files which are stored in the PW_psis folder (this is done for several unit cell lenths, folders should be present when running code). Generates analytical solutions using analytical.py, calculates RMSE, plots contour plots (saved in contou plots folder), and makes isosurface files (.ply) which can be processed in Blender (saved in Isosurfaces folder.
 analytical - yields analytical hydrogen like plane waves on the same grid as resulting from plane wave analysis. This is used to evaluate the RMSE.
 Energy Diagrams - uses the calculated energies for the given wavefunctions (in the correct unit cell) to create the energy diagrams shown in fig: 2.2 and 2.3 in the report. 
 The excel file has all the manual analysis done.
